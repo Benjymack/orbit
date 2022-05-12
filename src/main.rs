@@ -134,7 +134,7 @@ fn calculate_trajectory(bodies: &Vec<Body>, target_body: &Body) -> (Vec<Displace
 
     let mut does_collide = false;
 
-    for _ in 0..100000 {
+    for _ in 0..1000 {
         let removed = update(&mut temp_bodies);
 
         if removed.contains(&0) {
@@ -270,7 +270,7 @@ fn update(bodies: &mut Vec<Body>) -> BTreeSet<usize> {
     to_remove
 }
 
-fn process_input(bodies: &mut Vec<Body>, is_paused: &mut bool, current_body: &mut BodyCreation, origin_x: f64, origin_y: f64, scale_factor: f64) {
+fn process_input(bodies: &mut Vec<Body>, is_paused: &mut bool, current_body: &mut BodyCreation, origin_x: f64, origin_y: f64, scale_factor: f64, autoscale: &mut bool, manual_scale_factor: &mut f64, manual_origin_x: &mut f64, manual_origin_y: &mut f64) {
     // Pause
     if is_key_pressed(KeyCode::Space) {
         *is_paused = !*is_paused;
@@ -294,6 +294,61 @@ fn process_input(bodies: &mut Vec<Body>, is_paused: &mut bool, current_body: &mu
     // Create a new body
     if is_key_pressed(KeyCode::Escape) {
         *current_body = BodyCreation::None;
+    }
+
+    if is_key_down(KeyCode::LeftControl) {
+        if is_key_down(KeyCode::Equal) {
+            if *autoscale {
+                *autoscale = false;
+                *manual_scale_factor = scale_factor;
+                *manual_origin_x = origin_x;
+                *manual_origin_y = origin_y;
+            }
+            *manual_scale_factor *= 1.1;
+        } else if is_key_down(KeyCode::Minus) {
+            if *autoscale {
+                *autoscale = false;
+                *manual_scale_factor = scale_factor;
+                *manual_origin_x = origin_x;
+                *manual_origin_y = origin_y;
+            }
+            *manual_scale_factor /= 1.1;
+        }
+    }
+
+    if is_key_down(KeyCode::Left) {
+        if *autoscale {
+            *autoscale = false;
+            *manual_scale_factor = scale_factor;
+            *manual_origin_x = origin_x;
+            *manual_origin_y = origin_y;
+        }
+        *manual_origin_x += 10.;
+    } else if is_key_down(KeyCode::Right) {
+        if *autoscale {
+            *autoscale = false;
+            *manual_scale_factor = scale_factor;
+            *manual_origin_x = origin_x;
+            *manual_origin_y = origin_y;
+        }
+        *manual_origin_x -= 10.;
+    }
+    if is_key_down(KeyCode::Up) {
+        if *autoscale {
+            *autoscale = false;
+            *manual_scale_factor = scale_factor;
+            *manual_origin_x = origin_x;
+            *manual_origin_y = origin_y;
+        }
+        *manual_origin_y += 10.;
+    } else if is_key_down(KeyCode::Down) {
+        if *autoscale {
+            *autoscale = false;
+            *manual_scale_factor = scale_factor;
+            *manual_origin_x = origin_x;
+            *manual_origin_y = origin_y;
+        }
+        *manual_origin_y -= 10.;
     }
 
     match current_body {
@@ -345,7 +400,11 @@ async fn main() {
     let mut is_paused = false;
     let mut current_body = BodyCreation::None;
 
-    let autoscale = true;
+    let mut autoscale = true;
+
+    let mut manual_scale_factor = 1e-4;
+    let mut manual_origin_x = 0.;
+    let mut manual_origin_y = 0.;
 
     let explosion_texture = Texture2D::from_image(&Image::from_file_with_format(include_bytes!("../explosion.png"), Some(ImageFormat::Png)));
 
@@ -398,16 +457,16 @@ async fn main() {
 
             (scale_factor, origin_x, origin_y)
         } else {
-            // Manual scale will not change
+            // Manual scale will not change automatically
 
-            let origin_x = screen_width() as f64 / 2.;
-            let origin_y = screen_height() as f64 / 2.;
+            // let origin_x = screen_width() as f64 / 2.;
+            // let origin_y = screen_height() as f64 / 2.;
 
-            (1e-4, origin_x, origin_y)
+            (manual_scale_factor, manual_origin_x, manual_origin_y)
         };
 
 
-        process_input(&mut bodies, &mut is_paused, &mut current_body, origin_x, origin_y, scale_factor);
+        process_input(&mut bodies, &mut is_paused, &mut current_body, origin_x, origin_y, scale_factor, &mut autoscale, &mut manual_scale_factor, &mut manual_origin_x, &mut manual_origin_y);
         if !is_paused {
             update(&mut bodies);
         }
